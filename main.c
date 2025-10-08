@@ -67,28 +67,28 @@ struct nv_tree* nv_tree_right(struct nv_tree* tree)
 
 static struct nv_tree* nv_tree_insert(struct nv_tree* tree, struct nv_node data)
 {
-    if (!tree->root) {
+    if (!tree || !tree->root) {
         return nv_tree_init(NULL, NULL, data);
     }
 
-    struct nv_tree_node root = *tree->root;
+    struct nv_tree_node* root = tree->root;
     struct nv_tree* t = (struct nv_tree*)malloc(sizeof(struct nv_tree));
 
-    if (data.index < root.data.index) {
+    if (data.index < root->data.index) {
         return
             nv_tree_init(
                 nv_tree_insert(nv_tree_left(tree), data),
                 nv_tree_right(tree),
-                root.data
+                root->data
             );
     }
     else if
-       (root.data.index < data.index) {
+       (root->data.index < data.index) {
         return
             nv_tree_init(
                 nv_tree_left(tree),
                 nv_tree_insert(nv_tree_right(tree), data),
-                root.data
+                root->data
             );
     }
     else {
@@ -99,6 +99,5 @@ static struct nv_tree* nv_tree_insert(struct nv_tree* tree, struct nv_node data)
 
 int main()
 {
-
     return 0;
 }
