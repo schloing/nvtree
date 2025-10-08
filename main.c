@@ -10,10 +10,12 @@ struct nv_node {
 
 struct nv_tree_node;
 
+typedef enum { R, B } nv_colour;
+
 struct nv_tree_node {
     struct nv_node data;
     struct nv_tree_node* left, *right;
-    enum { R, B } colour;
+    nv_colour colour;
 };
 
 struct nv_tree {
