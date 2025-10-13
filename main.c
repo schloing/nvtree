@@ -60,12 +60,7 @@ struct nv_tree_node* nv_tree_make_parent(
     struct nv_node data
 )
 {
-    struct nv_tree_node* parent = nv_tree_node_init(left, right, c, data);
-
-    nv_tree_free(left);
-    nv_tree_free(right);
-
-    return parent;
+    return nv_tree_node_init(left, right, c, data);
 }
 
 static
@@ -157,8 +152,11 @@ static bool nv_tree_is_doubled_right(struct nv_tree_node* tree)
 
 static inline
 struct nv_tree_node* nv_tree_paint(struct nv_tree_node* node, nv_colour c) {
-    node->colour = c; // FIXME: not functional
-    return node;
+    if (!node || node->colour == c) {
+        return node;
+    }
+
+    return nv_tree_make_parent_shared(node, node->left, node->right, c, node->data);
 }
 
 static 
@@ -169,30 +167,46 @@ struct nv_tree_node* nv_tree_balance(
     struct nv_node data
 )
 {
-    struct nv_tree_node* l, *r;
+    struct nv_tree_node* l, *r, *result;
 
     if (c == B && nv_tree_is_doubled_left(left)) {
         l = nv_tree_paint(left->left, B);
         r = nv_tree_node_init(left->right, right, B, data);
-        return nv_tree_node_init(l, r, R, left->data);
+        result = nv_tree_node_init(l, r, R, left->data);
+
+        nv_tree_free(l);
+        nv_tree_free(r);
+        return result;
     }
 
     if (c == B && nv_tree_is_doubled_right(left)) {
         l = nv_tree_node_init(left->left, left->right->left, B, left->data);
         r = nv_tree_node_init(left->right->right, right, B, data);
-        return nv_tree_node_init(l, r, R, left->right->data);
+        result = nv_tree_node_init(l, r, R, left->right->data);
+
+        nv_tree_free(l);
+        nv_tree_free(r);
+        return result;
     }
 
     if (c == B && nv_tree_is_doubled_left(right)) {
         l = nv_tree_node_init(left, right->left->left, B, data);
         r = nv_tree_node_init(right->left->right, right->right, B, right->data);
-        return nv_tree_node_init(l, r, R, right->left->data);
+        result = nv_tree_node_init(l, r, R, right->left->data);
+
+        nv_tree_free(l);
+        nv_tree_free(r);
+        return result;
     }
 
     if (c == B && nv_tree_is_doubled_right(right)) {
         l = nv_tree_node_init(left, right->left, B, data);
         r = nv_tree_paint(right->right, B);
-        return nv_tree_node_init(l, r, R, right->data);
+        result = nv_tree_node_init(l, r, R, right->data);
+
+        nv_tree_free(l);
+        nv_tree_free(r);
+        return result;
     }
 
     return nv_tree_node_init(left, right, c, data);
@@ -211,7 +225,9 @@ static struct nv_tree_node* nv_tree_insert(struct nv_tree_node* tree, struct nv_
     if (data.index < tree->data.index) {
         l = nv_tree_insert(tree->left, data);
         r = nv_tree_balance(l, tree->right, c, tree->data);
-        nv_tree_free(l);
+
+        nv_tree_free(tree->left);
+        tree->left = l;
 
         if (r) {
             r->refcount++;
@@ -225,7 +241,9 @@ static struct nv_tree_node* nv_tree_insert(struct nv_tree_node* tree, struct nv_
        (tree->data.index < data.index) {
         l = nv_tree_insert(tree->right, data);
         r = nv_tree_balance(tree->left, l, c, tree->data);
-        nv_tree_free(l);
+
+        nv_tree_free(tree->right);
+        tree->right = l;
 
         if (r) {
             r->refcount++;
@@ -287,12 +305,12 @@ int main()
 
     cvector_reserve(edits, 32);
 
-    size_t values[] = {
-        1, 2, 3, 4, 5    };
+#define NUM_VALUES 500
+    size_t values[NUM_VALUES];
 
-    size_t n = sizeof(values) / sizeof(values[0]);
+    for(size_t i = 0; i < 500; i++) {
+        values[i] = rand() % 1000;
 
-    for (size_t i = 0; i < n; i++) {
         node.index = values[i];
         node.length = i + 1;
 
@@ -310,7 +328,6 @@ int main()
 
         tree = painted;
     }
-
 
     nv_tree_print(tree);
 
