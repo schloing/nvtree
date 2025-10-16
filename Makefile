@@ -1,7 +1,7 @@
 default: a.out
 
 a.out: main.c
-	gcc -g main.c -o a.out
+	gcc -fsanitize=address -g main.c -o a.out
 
 .PHONY: debug clean run valgrind
 
