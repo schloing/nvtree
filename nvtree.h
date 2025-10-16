@@ -1,18 +1,22 @@
 #ifndef NV_TREE_H
 #define NV_TREE_H
 
+#define CVECTOR_LOGARITHMIC_GROWTH
+#include "cvector.h"
+
 struct nv_node {
     size_t index;
     size_t length;
 };
 
-struct nv_tree_node;
-
 typedef enum { R, B } nv_colour;
+
+typedef int nv_pool_index;
+#define NV_NULL_INDEX -1
 
 struct nv_tree_node {
     struct nv_node data;
-    struct nv_tree_node* left, *right;
+    nv_pool_index left, right;
     nv_colour colour;
     size_t refcount;
 };

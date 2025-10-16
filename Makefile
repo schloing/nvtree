@@ -1,7 +1,7 @@
 default: a.out
 
 a.out: main.c
-	gcc -fsanitize=address -g main.c -o a.out
+	gcc -g main.c -o a.out
 
 .PHONY: debug clean run valgrind
 
@@ -11,8 +11,8 @@ valgrind: a.out
 bench: a.out
 	valgrind --tool=massif ./a.out
 
-debug: a.out
-	gdb ./a.out
+debug: main.c
+	gcc -fsanitize=address -g main.c -o a.out
 
 clean:
 	rm -f *.out
