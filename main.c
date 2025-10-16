@@ -308,7 +308,7 @@ int main()
 #define NUM_VALUES 500
     size_t values[NUM_VALUES];
 
-    for(size_t i = 0; i < 500; i++) {
+    for (size_t i = 0; i < 500; i++) {
         values[i] = rand() % 1000;
 
         node.index = values[i];
