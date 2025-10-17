@@ -1,21 +1,21 @@
-default: a.out
+CC_FLAGS = -Wall -O2
+OBJ = main.o
 
-a.out: main.c
-	gcc -g main.c -o a.out
+.PHONY: clean run debug massif
 
-.PHONY: debug clean run valgrind
+libnvtree.a: $(OBJ)
+	ar rcs $@ $^
 
-valgrind: a.out
-	valgrind --leak-check=full --track-origins=yes ./a.out
+main.o: main.c nvtree.h
+	gcc $(CC_FLAGS) -c main.c -o main.o
 
-bench: a.out
-	valgrind --tool=massif ./a.out
+test: test/main.c libnvtree.a
+	gcc $(CC_FLAGS) $^ -L. -lnvtree -o test.out
+	./test.out
 
-debug: main.c
-	gcc -fsanitize=address -g main.c -o a.out
+massif: test
+	valgrind --tool=massif --massif-out-file=massif.out ./test.out
+	ms_print massif.out
 
 clean:
-	rm -f *.out
-
-run: a.out
-	./a.out
+	rm -f *.out *.o *.a
