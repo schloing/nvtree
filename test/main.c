@@ -1,6 +1,6 @@
 #include "../nvtree.h"
 
-#define NUM_VALUES 1'00'000
+#define NUM_VALUES 100000 // 1'00'000
 
 int main()
 {
