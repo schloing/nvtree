@@ -10,7 +10,7 @@ main.o: main.c nvtree.h
 	gcc $(CC_FLAGS) -c main.c -o main.o
 
 test: test/main.c libnvtree.a
-	gcc $(CC_FLAGS) $^ -L. -lnvtree -o test.out
+	gcc -fsanitize=address $(CC_FLAGS) $^ -L. -lnvtree -o test.out
 	./test.out
 
 massif: test

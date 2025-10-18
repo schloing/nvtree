@@ -1,8 +1,7 @@
 #ifndef NV_TREE_H
 #define NV_TREE_H
 
-#define CVECTOR_LOGARITHMIC_GROWTH
-#include "cvector.h"
+#include <stddef.h>
 
 struct nv_node {
     size_t index;
