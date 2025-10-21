@@ -53,7 +53,7 @@ static nv_pool_index nv_tree_make_parent_shared(
 
     if (oldn && oldn->left == left && oldn->right == right &&
         oldn->colour == colour &&
-        oldn->data.index == data.index &&
+        oldn->data.length_left == data.length_left &&
         oldn->data.length == data.length) {
         return old;
     }
@@ -192,27 +192,36 @@ static nv_pool_index nv_tree_balance(
     return result;
 }
 
-nv_pool_index nv_tree_insert(nv_pool_index tree, struct nv_node data)
+nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data)
 {
     struct nv_tree_node* node = NODE_FROM_POOL(tree);
 
     if (!node) {
+        data.length_left = pos;
         return nv_tree_node_init(NV_NULL_INDEX, NV_NULL_INDEX, R, data);
     }
 
     nv_pool_index result = tree;
 
-    if (data.index < node->data.index) {
-        nv_pool_index new_left = nv_tree_insert(node->left, data);
+    size_t length_left = node->data.length_left,
+           node_length = node->data.length;
+
+//  printf("pos: %zu, length: %zu, length_left: %zu, node_length: %zu\n", pos, data.length, length_left, node_length);
+
+    if (pos < length_left + node_length) {
+        nv_pool_index new_left = nv_tree_insert(node->left, pos, data);
         result = nv_tree_balance(new_left, node->right, node->colour, node->data);
+        NODE_FROM_POOL(result)->data.length_left += data.length;
         nv_tree_free(node->left);
     }
-    else if (data.index > node->data.index) {
-        nv_pool_index new_right = nv_tree_insert(node->right, data);
+    else if (pos > length_left + node_length) {
+        nv_pool_index new_right = nv_tree_insert(node->right, pos - length_left - node_length, data);
         result = nv_tree_balance(node->left, new_right, node->colour, node->data);
+        NODE_FROM_POOL(result)->data.length_left += data.length;
         nv_tree_free(node->right);
     }
     else {
+        // TODO: split node, insert here
         node->refcount++;
     }
 
@@ -228,8 +237,19 @@ static void nv_tree_print_inorder(nv_pool_index node)
     }
 
     nv_tree_print_inorder(n->left);
-    printf("(%zu,%zu,%c) ", n->data.index, n->data.length, n->colour == R ? 'R' : 'B');
+    printf("(%zu,%zu,%c) ", n->data.length_left, n->data.length, n->colour == R ? 'R' : 'B');
     nv_tree_print_inorder(n->right);
+}
+
+void nv_tree_print(nv_pool_index tree)
+{
+    if (!NODE_FROM_POOL(tree)) {
+        return;
+    }
+
+    printf("in order");
+    nv_tree_print_inorder(tree);
+    printf("\n");
 }
 
 static void nv_tree_free(nv_pool_index tree)
@@ -249,20 +269,12 @@ static void nv_tree_free(nv_pool_index tree)
     }
 }
 
-void nv_tree_print(nv_pool_index tree)
-{
-    if (!NODE_FROM_POOL(tree)) {
-        return;
-    }
-
-    printf("in order");
-    nv_tree_print_inorder(tree);
-    printf("\n");
-}
-
 nv_pool_index nv_tree_init()
 {
-    cvector_reserve(nv_pool, 32);
+    if (!nv_pool) {
+        cvector_reserve(nv_pool, 32);
+    }
+
     return NV_NULL_INDEX;
 }
 
@@ -274,4 +286,5 @@ void nv_tree_free_all(nv_pool_index tree)
 
     nv_tree_free(tree);
     cvector_free(nv_pool);
+    nv_pool = NULL;
 }

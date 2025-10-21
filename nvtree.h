@@ -4,8 +4,8 @@
 #include <stddef.h>
 
 struct nv_node {
-    size_t index;
     size_t length;
+    size_t length_left;
 };
 
 typedef enum { R, B } nv_colour;
@@ -20,10 +20,10 @@ struct nv_tree_node {
     size_t refcount;
 };
 
-nv_pool_index nv_tree_insert(nv_pool_index tree, struct nv_node data);
+nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data);
 nv_pool_index nv_tree_paint(nv_pool_index node, nv_colour c);
 nv_pool_index nv_tree_init();
-void nv_tree_print(nv_pool_index tree);
 void nv_tree_free_all(nv_pool_index tree);
+void nv_tree_print(nv_pool_index tree);
 
 #endif

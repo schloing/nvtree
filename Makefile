@@ -7,11 +7,13 @@ libnvtree.a: $(OBJ)
 	ar rcs $@ $^
 
 main.o: main.c nvtree.h
-	gcc $(CC_FLAGS) -c main.c -o main.o
+	gcc $(CC_FLAGS) -c main.c -o $@
 
-test: test/main.c libnvtree.a
-	gcc -fsanitize=address $(CC_FLAGS) $^ -L. -lnvtree -o test.out
-	./test.out
+test.o: test/main.c libnvtree.a
+	gcc -fsanitize=address $(CC_FLAGS) $^ -L. -lnvtree -o $@
+
+test: test.o
+	./test.o
 
 massif: test
 	valgrind --tool=massif --massif-out-file=massif.out ./test.out
