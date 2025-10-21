@@ -1,7 +1,7 @@
 CC_FLAGS = -Wall -O2
 OBJ = main.o
 
-.PHONY: clean run debug massif
+.PHONY: clean run debug massif test
 
 libnvtree.a: $(OBJ)
 	ar rcs $@ $^
@@ -9,8 +9,8 @@ libnvtree.a: $(OBJ)
 main.o: main.c nvtree.h
 	gcc $(CC_FLAGS) -c main.c -o $@
 
-test.o: test/main.c libnvtree.a
-	gcc -fsanitize=address $(CC_FLAGS) $^ -L. -lnvtree -o $@
+test.o: test/main.c $(OBJ)
+	gcc -fsanitize=address $(CC_FLAGS) $^ -o $@
 
 test: test.o
 	./test.o

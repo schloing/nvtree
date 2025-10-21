@@ -7,7 +7,7 @@
 #include "cvector.h"
 #include "nvtree.h"
 
-static cvector(struct nv_tree_node*) nv_pool; // tree node pool
+cvector(struct nv_tree_node*) nv_pool; // tree node pool
 
 // forwards
 static nv_pool_index nv_tree_make_parent_shared(
@@ -38,8 +38,6 @@ static nv_pool_index nv_tree_node_init(
 static void nv_tree_free(nv_pool_index tree);
 static void nv_tree_print_inorder(nv_pool_index node);
 // end forwards
-
-#define NODE_FROM_POOL(index) ((struct nv_tree_node*)(index > NV_NULL_INDEX ? nv_pool[index] : NULL))
 
 static nv_pool_index nv_tree_make_parent_shared(
     nv_pool_index old,
