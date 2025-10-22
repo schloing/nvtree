@@ -204,7 +204,7 @@ nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data
     size_t length_left = node->data.length_left,
            node_length = node->data.length;
 
-//  printf("pos: %zu, length: %zu, length_left: %zu, node_length: %zu\n", pos, data.length, length_left, node_length);
+//  printf("\npos: %zu, length: %zu, length_left: %zu, node_length: %zu\n", pos, data.length, length_left, node_length);
 
     if (pos < length_left + node_length) {
         nv_pool_index new_left = nv_tree_insert(node->left, pos, data);
@@ -215,12 +215,18 @@ nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data
     else if (pos > length_left + node_length) {
         nv_pool_index new_right = nv_tree_insert(node->right, pos - length_left - node_length, data);
         result = nv_tree_balance(node->left, new_right, node->colour, node->data);
-        NODE_FROM_POOL(result)->data.length_left += data.length;
         nv_tree_free(node->right);
     }
     else {
-        // TODO: split node, insert here
-        node->refcount++;
+        struct nv_tree_node* right = NODE_FROM_POOL(node->right);
+        nv_pool_index new_right = nv_tree_node_init(NV_NULL_INDEX, NV_NULL_INDEX, R, data);
+
+        if (right) {
+            nv_pool_index inserted = nv_tree_insert(node->right, 0, data);
+            result = nv_tree_balance(node->left, inserted, node->colour, node->data);
+        } else {
+            result = nv_tree_balance(node->left, new_right, node->colour, node->data);
+        }
     }
 
     return result;
