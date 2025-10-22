@@ -83,12 +83,34 @@ static int test_try_left_insertions()
     return 1;
 }
 
+static int test_try_contiguous_insertions()
+{
+    printf("attempting contiguous insertions\n------------------------------\n");
+
+    nv_pool_index tree = nv_tree_init();
+    size_t i = 0;
+
+    assign_insert_print(&tree, "monday", i);
+    assign_insert_print(&tree, "tuesday", i += strlen("monday"));
+    assign_insert_print(&tree, "wednesday", i += strlen("tuesday"));
+    assign_insert_print(&tree, "thursday", i += strlen("wednesday"));
+    assign_insert_print(&tree, "friday", i += strlen("thursday"));
+    assign_insert_print(&tree, "saturday", i += strlen("friday"));
+
+    nv_tree_free_all(tree);
+
+    return 1;
+}
+
 int main()
 {
     cvector_reserve(add_buffer, ADD_BUFFER_SIZE);
 
     assert(test_try_right_insertions());
+    printf("\n");
     assert(test_try_left_insertions());
+    printf("\n");
+    assert(test_try_contiguous_insertions());
 
     cvector_free(add_buffer);
 
