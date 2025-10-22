@@ -102,6 +102,7 @@ static int test_try_contiguous_insertions()
     return 1;
 }
 
+// TODO: automate verification of trees, printing and manually checking isn't a good test
 int main()
 {
     cvector_reserve(add_buffer, ADD_BUFFER_SIZE);
