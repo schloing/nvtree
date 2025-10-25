@@ -126,17 +126,22 @@ static nv_pool_index nv_tree_node_init(
     struct nv_tree_node *leftn = NODE_FROM_POOL(left),
                         *rightn = NODE_FROM_POOL(right);
 
+    node->data = data;
+
     if (leftn) {
         leftn->refcount++;
+        node->data.length_left = leftn->length_total;
     }
+
+    node->length_total = node->data.length_left + node->data.length;
 
     if (rightn) {
         rightn->refcount++;
+        node->length_total += rightn->length_total;
     }
 
     node->left = left;
     node->right = right;
-    node->data = data;
     node->colour = c;
     node->refcount = 1;
 
@@ -192,41 +197,61 @@ static nv_pool_index nv_tree_balance(
 
 nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data)
 {
+    // FIXME: insertion / splitting of nodes can lead to a shit ton of small nodes
+    // this is bad for performance and memory efficiency
+
     struct nv_tree_node* node = NODE_FROM_POOL(tree);
 
     if (!node) {
-        data.length_left = pos;
         return nv_tree_node_init(NV_NULL_INDEX, NV_NULL_INDEX, R, data);
     }
 
     nv_pool_index result = tree;
 
-    size_t length_left = node->data.length_left,
-           node_length = node->data.length;
+    size_t left_size = node->data.length_left;
+    size_t node_size = node->data.length;
 
-//  printf("\npos: %zu, length: %zu, length_left: %zu, node_length: %zu\n", pos, data.length, length_left, node_length);
+//  printf("\npos: %zu, new.length: %zu, node.left_len: %zu, node.length: %zu, node.total: %zu\n",
+//         pos, data.length, node->data.length_left, node->data.length, node->length_total);
 
-    if (pos < length_left + node_length) {
+    if (pos < left_size) {
         nv_pool_index new_left = nv_tree_insert(node->left, pos, data);
         result = nv_tree_balance(new_left, node->right, node->colour, node->data);
-        NODE_FROM_POOL(result)->data.length_left += data.length;
         nv_tree_free(node->left);
     }
-    else if (pos > length_left + node_length) {
-        nv_pool_index new_right = nv_tree_insert(node->right, pos - length_left - node_length, data);
+    else if (pos >= left_size + node_size) {
+        nv_pool_index new_right = nv_tree_insert(node->right, pos - left_size - node_size, data);
         result = nv_tree_balance(node->left, new_right, node->colour, node->data);
         nv_tree_free(node->right);
     }
     else {
-        struct nv_tree_node* right = NODE_FROM_POOL(node->right);
-        nv_pool_index new_right = nv_tree_node_init(NV_NULL_INDEX, NV_NULL_INDEX, R, data);
+        size_t left_chunk_len = pos - left_size,
+               right_chunk_len = node_size - left_chunk_len;
 
-        if (right) {
-            nv_pool_index inserted = nv_tree_insert(node->right, 0, data);
-            result = nv_tree_balance(node->left, inserted, node->colour, node->data);
+        nv_pool_index left_child = NV_NULL_INDEX, right_child = NV_NULL_INDEX;
+
+        if (left_chunk_len > 0) {
+            struct nv_node left_chunk = node->data;
+            left_chunk.length = left_chunk_len;
+            left_chunk.length_left = node->data.length_left;
+            left_child = nv_tree_node_init(node->left, NV_NULL_INDEX, node->colour, left_chunk);
         } else {
-            result = nv_tree_balance(node->left, new_right, node->colour, node->data);
+            left_child = node->left;
         }
+
+        if (right_chunk_len > 0) {
+            struct nv_node right_chunk = node->data;
+            right_chunk.length = right_chunk_len;
+            right_chunk.length_left = 0;
+            right_chunk.add_buffer_index = node->data.add_buffer_index + left_chunk_len;
+            right_child = nv_tree_node_init(NV_NULL_INDEX, node->right, node->colour, right_chunk);
+        } else {
+            right_child = node->right;
+        }
+
+        nv_pool_index parent = nv_tree_node_init(left_child, right_child, node->colour, data);
+        nv_tree_free(tree);
+        result = parent;
     }
 
     return result;

@@ -13,6 +13,8 @@ static void assign_insert_print(nv_pool_index* tree, const char* string, size_t 
 static void print(nv_pool_index tree);
 static int test_try_right_insertions();
 static int test_try_left_insertions();
+static int test_try_contiguous_insertions();
+static int test_middle_insertions();
 // end forwards
 
 static void assign_insert(nv_pool_index* tree, const char* string, size_t pos)
@@ -23,7 +25,7 @@ static void assign_insert(nv_pool_index* tree, const char* string, size_t pos)
         cvector_push_back(add_buffer, string[i]);
     }
 
-    struct nv_node data = { .add_buffer_index = push_index, .length = i };
+    struct nv_node data = { .add_buffer_index = push_index, .length = i, .length_left = 0 };
 
     *tree = nv_tree_insert(*tree, pos, data);
     *tree = nv_tree_paint(*tree, B);
@@ -46,7 +48,9 @@ static void print(nv_pool_index node)
 
     print(n->left);
 
-    if (add_buffer && n->data.add_buffer_index <= cvector_size(add_buffer)) {
+    size_t bufsize = cvector_size(add_buffer);
+    if (n->data.add_buffer_index < bufsize &&
+        n->data.add_buffer_index + n->data.length <= bufsize) {
         printf("%.*s\n", (int)n->data.length, &add_buffer[n->data.add_buffer_index]);
     }
 
@@ -59,9 +63,10 @@ static int test_try_right_insertions()
 
     nv_pool_index tree = nv_tree_init();
 
-    assign_insert_print(&tree, "monday", 10);
-    assign_insert_print(&tree, "tuesday", 30);
-    assign_insert_print(&tree, "wednesday", 50);
+    size_t pos = 0;
+    assign_insert_print(&tree, "monday", pos); pos += strlen("monday");
+    assign_insert_print(&tree, "tuesday", pos); pos += strlen("tuesday");
+    assign_insert_print(&tree, "wednesday", pos);
 
     nv_tree_free_all(tree);
 
@@ -74,9 +79,9 @@ static int test_try_left_insertions()
 
     nv_pool_index tree = nv_tree_init();
 
-    assign_insert_print(&tree, "wednesday", 50);
-    assign_insert_print(&tree, "tuesday", 30);
-    assign_insert_print(&tree, "monday", 10);
+    assign_insert_print(&tree, "wednesday", 0);
+    assign_insert_print(&tree, "tuesday", 0);
+    assign_insert_print(&tree, "monday", 0);
 
     nv_tree_free_all(tree);
 
@@ -88,14 +93,28 @@ static int test_try_contiguous_insertions()
     printf("attempting contiguous insertions\n------------------------------\n");
 
     nv_pool_index tree = nv_tree_init();
-    size_t i = 0;
+    size_t pos = 0;
 
-    assign_insert_print(&tree, "monday", i);
-    assign_insert_print(&tree, "tuesday", i += strlen("monday"));
-    assign_insert_print(&tree, "wednesday", i += strlen("tuesday"));
-    assign_insert_print(&tree, "thursday", i += strlen("wednesday"));
-    assign_insert_print(&tree, "friday", i += strlen("thursday"));
-    assign_insert_print(&tree, "saturday", i += strlen("friday"));
+    assign_insert_print(&tree, "monday", pos);      pos += strlen("monday");
+    assign_insert_print(&tree, "tuesday", pos);     pos += strlen("tuesday");
+    assign_insert_print(&tree, "wednesday", pos);   pos += strlen("wednesday");
+    assign_insert_print(&tree, "thursday", pos);    pos += strlen("thursday");
+    assign_insert_print(&tree, "friday", pos);      pos += strlen("friday");
+    assign_insert_print(&tree, "saturday", pos);
+
+    nv_tree_free_all(tree);
+
+    return 1;
+}
+
+static int test_middle_insertions()
+{
+    printf("attempting middle insertions\n------------------------------\n");
+
+    nv_pool_index tree = nv_tree_init();
+
+    assign_insert_print(&tree, "mnday", 0);
+    assign_insert_print(&tree, "o", 1);
 
     nv_tree_free_all(tree);
 
@@ -112,6 +131,8 @@ int main()
     assert(test_try_left_insertions());
     printf("\n");
     assert(test_try_contiguous_insertions());
+    printf("\n");
+    assert(test_middle_insertions());
 
     cvector_free(add_buffer);
 

@@ -23,6 +23,7 @@ struct nv_tree_node {
     nv_pool_index left, right;
     nv_colour colour;
     size_t refcount;
+    size_t length_total;
 };
 
 extern cvector(struct nv_tree_node*) nv_pool;
