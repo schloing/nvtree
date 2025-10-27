@@ -7,6 +7,8 @@
 #include "cvector.h"
 #include "nvtree.h"
 
+// externd
+char* nv_buffers[NV_BUFF_ID_END];
 cvector(struct nv_tree_node*) nv_pool; // tree node pool
 
 // forwards
@@ -27,6 +29,8 @@ static nv_pool_index nv_tree_balance(
     nv_colour c,
     struct nv_node data
 );
+
+static size_t nv_node_local_lfcount(struct nv_node* data);
 
 static nv_pool_index nv_tree_node_init(
     nv_pool_index left,
@@ -108,6 +112,30 @@ static bool nv_tree_is_doubled_right(nv_pool_index tree)
            && rightrightn->colour == R;
 }
 
+static size_t nv_node_local_lfcount(struct nv_node* data)
+{
+    if (!data) {
+        return 0;
+    }
+
+    char* buffer = nv_buffers[data->buff_id];
+    size_t lfcount = 0;
+
+    for (int i = data->buff_index; i < data->buff_index + data->length; i++) {
+        if (buffer[i] == '\n') {
+            lfcount++;
+        }
+        else if (buffer[i] == '\r') {
+            lfcount++;
+            if (i + 1 <= data->buff_index + data->length && buffer[i + 1] == '\n') {
+                i += 2; // skip \n, because \r\n counts as 1 lf
+            }
+        }
+    }
+
+    return lfcount;
+}
+
 static nv_pool_index nv_tree_node_init(
     nv_pool_index left,
     nv_pool_index right,
@@ -128,9 +156,12 @@ static nv_pool_index nv_tree_node_init(
 
     node->data = data;
 
+    node->data.lfcount = nv_node_local_lfcount(&node->data);
+
     if (leftn) {
         leftn->refcount++;
         node->data.length_left = leftn->length_total;
+        node->data.lfcount += leftn->data.lfcount;
     }
 
     node->length_total = node->data.length_left + node->data.length;
@@ -243,7 +274,7 @@ nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data
             struct nv_node right_chunk = node->data;
             right_chunk.length = right_chunk_len;
             right_chunk.length_left = 0;
-            right_chunk.add_buffer_index = node->data.add_buffer_index + left_chunk_len;
+            right_chunk.buff_index = node->data.buff_index + left_chunk_len;
             right_child = nv_tree_node_init(NV_NULL_INDEX, node->right, node->colour, right_chunk);
         } else {
             right_child = node->right;
@@ -316,4 +347,71 @@ void nv_tree_free_all(nv_pool_index tree)
     nv_tree_free(tree);
     cvector_free(nv_pool);
     nv_pool = NULL;
+}
+
+nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
+{
+    struct nv_tree_node* node;
+    size_t left_len = 0, node_len = 0;
+
+    nv_pool_index current = tree;
+
+    while (current != NV_NULL_INDEX) {
+        node = NODE_FROM_POOL(current);
+
+        if (!node) {
+            break;
+        }
+
+        left_len = node->data.length_left;
+        node_len = node->data.length;
+
+        if (pos < left_len) {
+            current = node->left;
+        }
+        else if (pos < left_len + node_len) {
+            // found the node containing pos
+            return current;
+        }
+        else {
+            pos -= left_len + node_len;
+            current = node->right;
+        }
+    }
+
+    return NV_NULL_INDEX;
+}
+
+nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
+{
+    struct nv_tree_node *node, *left;
+    size_t left_lf = 0, local_lf = 0;
+
+    nv_pool_index current = tree;
+
+    while (current != NV_NULL_INDEX) {
+        node = NODE_FROM_POOL(current);
+
+        if (!node) {
+            break;
+        }
+
+        left = NODE_FROM_POOL(node->left);
+        left_lf = left ? left->data.lfcount : 0;
+        local_lf = nv_node_local_lfcount(&node->data);
+
+        if (line < left_lf) {
+            current = node->left;
+        }
+        else if (line < left_lf + local_lf) {
+            // line falls within this node’s text
+            return current;
+        }
+        else {
+            line -= left_lf + local_lf;
+            current = node->right;
+        }
+    }
+
+    return NV_NULL_INDEX;
 }

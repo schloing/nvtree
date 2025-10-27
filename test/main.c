@@ -11,6 +11,7 @@ static cvector(char) add_buffer;
 static void assign_insert(nv_pool_index* tree, const char* string, size_t pos);
 static void assign_insert_print(nv_pool_index* tree, const char* string, size_t pos);
 static void print(nv_pool_index tree);
+static void print_current_only(nv_pool_index tree);
 static int test_try_right_insertions();
 static int test_try_left_insertions();
 static int test_try_contiguous_insertions();
@@ -25,7 +26,7 @@ static void assign_insert(nv_pool_index* tree, const char* string, size_t pos)
         cvector_push_back(add_buffer, string[i]);
     }
 
-    struct nv_node data = { .add_buffer_index = push_index, .length = i, .length_left = 0 };
+    struct nv_node data = { .buff_id = NV_BUFF_ID_ADD, .buff_index = push_index, .length = i, .length_left = 0 };
 
     *tree = nv_tree_insert(*tree, pos, data);
     *tree = nv_tree_paint(*tree, B);
@@ -38,23 +39,40 @@ static void assign_insert_print(nv_pool_index* tree, const char* string, size_t 
     print(*tree);
 }
 
-static void print(nv_pool_index node)
+static void print(nv_pool_index tree)
 {
-    struct nv_tree_node* n = NODE_FROM_POOL(node);
+    struct nv_tree_node* node = NODE_FROM_POOL(tree);
 
-    if (!n) {
+    if (!node) {
         return;
     }
 
-    print(n->left);
+    print(node->left);
 
     size_t bufsize = cvector_size(add_buffer);
-    if (n->data.add_buffer_index < bufsize &&
-        n->data.add_buffer_index + n->data.length <= bufsize) {
-        printf("%.*s\n", (int)n->data.length, &add_buffer[n->data.add_buffer_index]);
+
+    if (node->data.buff_index < bufsize &&
+        node->data.buff_index + node->data.length <= bufsize) {
+        printf("%.*s\n", (int)node->data.length, &add_buffer[node->data.buff_index]);
     }
 
-    print(n->right);
+    print(node->right);
+}
+
+static void print_current_only(nv_pool_index tree)
+{
+    struct nv_tree_node* node = NODE_FROM_POOL(tree);
+
+    if (!node) {
+        return;
+    }
+
+    size_t bufsize = cvector_size(add_buffer);
+
+    if (node->data.buff_index < bufsize &&
+        node->data.buff_index + node->data.length <= bufsize) {
+        printf("%.*s\n", (int)node->data.length, &add_buffer[node->data.buff_index]);
+    }
 }
 
 static int test_try_right_insertions()
@@ -121,10 +139,61 @@ static int test_middle_insertions()
     return 1;
 }
 
+static int test_find_by_pos()
+{
+    printf("attempting find by pos\n------------------------------\n");
+
+    nv_pool_index tree = nv_tree_init(), line = NV_NULL_INDEX;
+    size_t pos = 0;
+
+    assign_insert_print(&tree, "monday\n", pos);      pos += strlen("monday\n");
+    assign_insert_print(&tree, "tuesday\n", pos);     pos += strlen("tuesday\n");
+    assign_insert_print(&tree, "wednesday\n", pos);   pos += strlen("wednesday\n");
+    assign_insert_print(&tree, "thursday\n", pos);    pos += strlen("thursday\n");
+    assign_insert_print(&tree, "friday\n", pos);      pos += strlen("friday\n");
+    assign_insert_print(&tree, "saturday\n", pos);
+
+    for (int i = 0; i < pos; i++) {
+        line = nv_find_by_pos(tree, i);
+        printf("pos %d falls in node: ", i);
+        print_current_only(line);
+    }
+
+    nv_tree_free_all(tree);
+
+    return 1;
+}
+
+static int test_find_by_line()
+{
+    printf("attempting find by line\n------------------------------\n");
+
+    nv_pool_index tree = nv_tree_init(), line = NV_NULL_INDEX;
+    size_t pos = 0;
+
+    assign_insert_print(&tree, "monday\n", pos);      pos += strlen("monday\n");
+    assign_insert_print(&tree, "tuesday\n", pos);     pos += strlen("tuesday\n");
+    assign_insert_print(&tree, "wednesday\n", pos);   pos += strlen("wednesday\n");
+    assign_insert_print(&tree, "thursday\n", pos);    pos += strlen("thursday\n");
+    assign_insert_print(&tree, "friday\n", pos);      pos += strlen("friday\n");
+    assign_insert_print(&tree, "saturday\n", pos);
+
+    for (int i = 0; i < 5; i++) {
+        line = nv_find_by_line(tree, i);
+        printf("line %d: ", i);
+        print_current_only(line);
+    }
+
+    nv_tree_free_all(tree);
+
+    return 1;
+}
+
 // TODO: automate verification of trees, printing and manually checking isn't a good test
 int main()
 {
     cvector_reserve(add_buffer, ADD_BUFFER_SIZE);
+    nv_buffers[NV_BUFF_ID_ADD] = add_buffer;
 
     assert(test_try_right_insertions());
     printf("\n");
@@ -133,6 +202,10 @@ int main()
     assert(test_try_contiguous_insertions());
     printf("\n");
     assert(test_middle_insertions());
+    printf("\n");
+    assert(test_find_by_pos());
+    printf("\n");
+    assert(test_find_by_line());
 
     cvector_free(add_buffer);
 

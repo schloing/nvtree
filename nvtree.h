@@ -5,10 +5,21 @@
 #define CVECTOR_LOGARITHMIC_GROWTH
 #include "cvector.h"
 
+typedef enum {
+    NV_BUFF_ID_ORIGINAL,
+    NV_BUFF_ID_ADD,
+    NV_BUFF_ID_DEL,
+    NV_BUFF_ID_END,
+} nv_buff_id;
+
+extern char* nv_buffers[NV_BUFF_ID_END];
+
 struct nv_node {
-    size_t add_buffer_index;
+    nv_buff_id buff_id;
+    size_t buff_index;
     size_t length;
     size_t length_left;
+    size_t lfcount;
 };
 
 typedef enum { R, B } nv_colour;
@@ -33,5 +44,7 @@ nv_pool_index nv_tree_paint(nv_pool_index node, nv_colour c);
 nv_pool_index nv_tree_init();
 void nv_tree_free_all(nv_pool_index tree);
 void nv_tree_print(nv_pool_index tree);
+nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos);
+nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line);
 
 #endif
