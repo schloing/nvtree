@@ -63,18 +63,18 @@ static nv_pool_index nv_tree_make_parent_shared(
     return nv_tree_node_init(left, right, colour, data);
 }
 
-nv_pool_index nv_tree_paint(nv_pool_index node, nv_colour c)
+nv_pool_index nv_tree_paint(nv_pool_index tree, nv_colour c)
 {
-    struct nv_tree_node* n = NODE_FROM_POOL(node);
+    struct nv_tree_node* node = NODE_FROM_POOL(tree);
 
-    if (!n || n->colour == c) {
-        return node;
+    if (!node || node->colour == c) {
+        return tree;
     }
 
-    nv_pool_index result = nv_tree_make_parent_shared(node, n->left, n->right, c, n->data);
+    nv_pool_index result = nv_tree_make_parent_shared(tree, node->left, node->right, c, node->data);
 
-    if (result != node) {
-        nv_tree_free(node);
+    if (result != tree) {
+        nv_tree_free(tree);
     }
 
     return result;

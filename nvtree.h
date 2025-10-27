@@ -38,7 +38,7 @@ struct nv_tree_node {
 extern cvector(struct nv_tree_node*) nv_pool;
 
 nv_pool_index nv_tree_insert(nv_pool_index tree, size_t pos, struct nv_node data);
-nv_pool_index nv_tree_paint(nv_pool_index node, nv_colour c);
+nv_pool_index nv_tree_paint(nv_pool_index tree, nv_colour c);
 nv_pool_index nv_tree_init();
 void nv_tree_free_all(nv_pool_index tree);
 void nv_tree_print(nv_pool_index tree);
