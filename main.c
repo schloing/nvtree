@@ -119,6 +119,11 @@ static size_t nv_node_local_lfcount(struct nv_node* data)
     }
 
     char* buffer = nv_buffers[data->buff_id];
+
+    if (!buffer) {
+        return 0;
+    }
+
     size_t lfcount = 0;
 
     for (int i = data->buff_index; i < data->buff_index + data->length; i++) {
