@@ -27,8 +27,6 @@ typedef enum { R, B } nv_colour;
 typedef int nv_pool_index;
 #define NV_NULL_INDEX -1
 
-#define NODE_FROM_POOL(index) ((struct nv_tree_node*)(index > NV_NULL_INDEX ? nv_pool[index] : NULL))
-
 struct nv_tree_node {
     struct nv_node data;
     nv_pool_index left, right;
@@ -46,5 +44,7 @@ void nv_tree_free_all(nv_pool_index tree);
 void nv_tree_print(nv_pool_index tree);
 nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos);
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line);
+
+#define NODE_FROM_POOL(index) ((struct nv_tree_node*)(nv_pool && index > NV_NULL_INDEX && index < cvector_size(nv_pool) ? nv_pool[index] : NULL))
 
 #endif
