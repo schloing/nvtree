@@ -174,6 +174,7 @@ static nv_pool_index nv_tree_node_init(
     if (rightn) {
         rightn->refcount++;
         node->length_total += rightn->length_total;
+        node->data.lfcount += rightn->data.lfcount;
     }
 
     node->left = left;
