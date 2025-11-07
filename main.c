@@ -390,8 +390,8 @@ nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
 
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
 {
-    struct nv_tree_node *node, *left;
-    size_t left_lf = 0, local_lf = 0;
+    struct nv_tree_node *node, *left, *right;
+    size_t left_lf = 0, right_lf = 0, local_lf = 0;
 
     nv_pool_index current = tree;
 
@@ -403,8 +403,11 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
         }
 
         left = NODE_FROM_POOL(node->left);
+        right = NODE_FROM_POOL(node->right);
+
         left_lf = left ? left->data.lfcount : 0;
-        local_lf = nv_node_local_lfcount(&node->data);
+        right_lf = right ? right->data.lfcount : 0;
+        local_lf = node->data.lfcount - left_lf - right_lf;
 
         if (line < left_lf) {
             current = node->left;
