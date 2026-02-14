@@ -127,6 +127,10 @@ static size_t nv_node_local_lfcount(struct nv_node* data)
     size_t lfcount = 0;
 
     for (int i = data->buff_index; i < data->buff_index + data->length; i++) {
+        if (!buffer[i]) {
+            break;
+        }
+
         if (buffer[i] == '\n') {
             lfcount++;
         }
