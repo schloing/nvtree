@@ -5,6 +5,8 @@
 #define CVECTOR_LOGARITHMIC_GROWTH
 #include "cvector.h"
 
+#define NV_MAX_BUFFERS 256
+
 typedef enum {
     NV_BUFF_ID_ORIGINAL,
     NV_BUFF_ID_ADD,
@@ -12,7 +14,7 @@ typedef enum {
     NV_BUFF_ID_END,
 } nv_buff_id;
 
-extern char* nv_buffers[NV_BUFF_ID_END];
+extern char* nv_buffers[NV_MAX_BUFFERS];
 
 struct nv_node {
     nv_buff_id buff_id;

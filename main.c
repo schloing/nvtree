@@ -8,7 +8,7 @@
 #include "nvtree.h"
 
 // externd
-char* nv_buffers[NV_BUFF_ID_END];
+char* nv_buffers[NV_MAX_BUFFERS];
 cvector(struct nv_tree_node*) nv_pool; // tree node pool
 
 // forwards
