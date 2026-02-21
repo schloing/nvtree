@@ -45,12 +45,7 @@ nv_pool_index nv_tree_init();
 void nv_tree_free_all(nv_pool_index tree);
 void nv_tree_print(nv_pool_index tree);
 nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos);
-#ifdef NVTREE_OLD_FIND_BY_LINE
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line);
-#else
-nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, nv_pool_index stack[], int* stack_top, size_t* lf_index);
-nv_pool_index nv_successor_with_stack(nv_pool_index current, nv_pool_index stack[], int* stack_top);
-#endif
 
 // TODO: use tree height so there's no guessing
 #define NVTREE_MAX_STACK_DEPTH 128

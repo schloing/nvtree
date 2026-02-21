@@ -392,7 +392,7 @@ nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
     return NV_NULL_INDEX;
 }
 
-#ifdef NVTREE_OLD_FIND_BY_LINE
+#ifndef NVTREE_OLD_FIND_BY_LINE
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
 {
     struct nv_tree_node *node, *left, *right;
