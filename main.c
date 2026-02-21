@@ -392,6 +392,7 @@ nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
     return NV_NULL_INDEX;
 }
 
+#ifdef NVTREE_OLD_FIND_BY_LINE
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
 {
     struct nv_tree_node *node, *left, *right;
@@ -428,3 +429,105 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
 
     return NV_NULL_INDEX;
 }
+#else
+// lf_index set to which line within node contains target line
+nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, nv_pool_index stack[], int* stack_top, size_t* lf_index)
+{
+    struct nv_tree_node *node, *left, *right;
+    size_t left_lf = 0, right_lf = 0, local_lf = 0;
+    int top = 0;
+    nv_pool_index current = tree;
+
+    while (current != NV_NULL_INDEX) {
+        if (top < NVTREE_MAX_STACK_DEPTH) {
+            stack[top++] = current;
+        }
+
+        node = NODE_FROM_POOL(current);
+
+        if (!node) {
+            break;
+        }
+
+        left = NODE_FROM_POOL(node->left);
+        right = NODE_FROM_POOL(node->right);
+
+        left_lf = left ? left->data.lfcount : 0;
+        right_lf = right ? right->data.lfcount : 0;
+        local_lf = node->data.lfcount - left_lf - right_lf;
+
+        if (line < left_lf) {
+            current = node->left;
+        }
+        else if (line < left_lf + local_lf) {
+            // line falls within this node’s text
+            *lf_index = line - left_lf;
+            *stack_top = top;
+            return current;
+        }
+        else {
+            line -= left_lf + local_lf;
+            current = node->right;
+        }
+    }
+
+    *stack_top = top;
+    return NV_NULL_INDEX;
+}
+
+nv_pool_index nv_successor_with_stack(nv_pool_index current, nv_pool_index stack[], int* stack_top)
+{
+    struct nv_tree_node *node = NODE_FROM_POOL(current), *tmp = NULL;
+
+    if (node->right != NV_NULL_INDEX) {
+        nv_pool_index current = node->right;
+
+        while (current != NV_NULL_INDEX) {
+            tmp = NODE_FROM_POOL(current);
+
+            if (!tmp) {
+                break;
+            }
+
+            if (*stack_top < NVTREE_MAX_STACK_DEPTH) {
+                stack[(*stack_top)++] = current;
+            }
+
+            current = tmp->left;
+        }
+
+        if (*stack_top > 0) {
+            return stack[(*stack_top) - 1];
+        }
+
+        return NV_NULL_INDEX;
+    }
+
+    // climb the stack until we find a parent where current is in left subtree
+    while (*stack_top > 0) {
+        nv_pool_index topidx = stack[--(*stack_top)];
+
+        if (topidx == current) {
+            if (*stack_top == 0) {
+                return NV_NULL_INDEX;
+            }
+
+            nv_pool_index parent = stack[(*stack_top) - 1];
+            tmp = NODE_FROM_POOL(parent);
+
+            if (!tmp) {
+                break;
+            }
+
+            if (tmp->left == current) {
+                return parent;
+            }
+
+            current = parent;
+            continue;
+        }
+    }
+
+    return NV_NULL_INDEX;
+}
+#endif
