@@ -152,7 +152,7 @@ static nv_pool_index nv_tree_node_init(
     struct nv_node data
 )
 {
-    struct nv_tree_node* node = (struct nv_tree_node*)malloc(sizeof(struct nv_tree_node));
+    struct nv_tree_node* node = (struct nv_tree_node*)NVTREE_MALLOC(sizeof(struct nv_tree_node));
 
     if (!node) {
         return NV_NULL_INDEX;
@@ -335,7 +335,7 @@ static void nv_tree_free(nv_pool_index tree)
         nv_tree_free(n->right);
         n->left = n->right = NV_NULL_INDEX;
         nv_pool[tree] = NULL;
-        free(n);
+        NVTREE_FREE(n);
     }
 }
 

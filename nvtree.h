@@ -51,4 +51,16 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line);
 #define NVTREE_MAX_STACK_DEPTH 128
 #define NODE_FROM_POOL(index) ((struct nv_tree_node*)(nv_pool && index > NV_NULL_INDEX && index < cvector_size(nv_pool) ? nv_pool[index] : NULL))
 
+#ifdef NVTREE_CONFIG
+#include NVTREE_CONFIG
+#endif
+
+#ifndef NVTREE_MALLOC
+#define NVTREE_MALLOC malloc
+#endif
+
+#ifndef NVTREE_FREE
+#define NVTREE_FREE free
+#endif
+
 #endif
