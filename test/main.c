@@ -179,7 +179,7 @@ static int test_find_by_line()
     assign_insert_print(&tree, "saturday\n", pos);
 
     for (int i = 0; i < 5; i++) {
-        line = nv_find_by_line(tree, i);
+        line = nv_find_by_line(tree, i, NULL);
         printf("line %d: ", i);
         print_current_only(line);
     }

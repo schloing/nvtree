@@ -92,8 +92,8 @@ static bool nv_tree_is_doubled_left(nv_pool_index tree)
     struct nv_tree_node* leftleftn = leftn ? NODE_FROM_POOL(leftn->left) : NULL;
 
     return node->colour == R
-           && leftleftn
-           && leftleftn->colour == R;
+           && leftn && leftn->colour == R
+           && leftleftn && leftleftn->colour == R;
 }
 
 static bool nv_tree_is_doubled_right(nv_pool_index tree)
@@ -108,8 +108,8 @@ static bool nv_tree_is_doubled_right(nv_pool_index tree)
     struct nv_tree_node* rightrightn = rightn ? NODE_FROM_POOL(rightn->right) : NULL;
 
     return node->colour == R
-           && rightrightn
-           && rightrightn->colour == R;
+           && rightn && rightn->colour == R
+           && rightrightn && rightrightn->colour == R;
 }
 
 static size_t nv_node_local_lfcount(struct nv_node* data)
@@ -125,8 +125,10 @@ static size_t nv_node_local_lfcount(struct nv_node* data)
     }
 
     size_t lfcount = 0;
+    size_t start = (size_t)data->buff_index;
+    size_t end = start + data->length;
 
-    for (int i = data->buff_index; i < data->buff_index + data->length; i++) {
+    for (size_t i = start; i < end; i++) {
         if (!buffer[i]) {
             break;
         }
@@ -136,8 +138,8 @@ static size_t nv_node_local_lfcount(struct nv_node* data)
         }
         else if (buffer[i] == '\r') {
             lfcount++;
-            if (i + 1 <= data->buff_index + data->length && buffer[i + 1] == '\n') {
-                i += 2; // skip \n, because \r\n counts as 1 lf
+            if (i + 1 < end && buffer[i + 1] == '\n') {
+                i++; /* skip just the \n; loop increment handles the rest */
             }
         }
     }
@@ -393,10 +395,11 @@ nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
 }
 
 #ifndef NVTREE_OLD_FIND_BY_LINE
-nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
+nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, size_t* out_lines_to_skip)
 {
     struct nv_tree_node *node, *left, *right;
     size_t left_lf = 0, right_lf = 0, local_lf = 0;
+    size_t lines_to_skip = 0;
 
     nv_pool_index current = tree;
 
@@ -413,12 +416,17 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
         left_lf = left ? left->data.lfcount : 0;
         right_lf = right ? right->data.lfcount : 0;
         local_lf = node->data.lfcount - left_lf - right_lf;
+        lines_to_skip++;
 
         if (line < left_lf) {
             current = node->left;
         }
         else if (line < left_lf + local_lf) {
             // line falls within this node’s text
+            lines_to_skip--;
+            if (out_lines_to_skip) {
+                *out_lines_to_skip = lines_to_skip;
+            }
             return current;
         }
         else {
@@ -427,6 +435,9 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line)
         }
     }
 
+    if (out_lines_to_skip) {
+        *out_lines_to_skip = lines_to_skip;
+    }
     return NV_NULL_INDEX;
 }
 #else
