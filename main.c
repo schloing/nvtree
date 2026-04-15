@@ -394,7 +394,7 @@ nv_pool_index nv_find_by_pos(nv_pool_index tree, size_t pos)
     return NV_NULL_INDEX;
 }
 
-#ifndef NVTREE_OLD_FIND_BY_LINE
+#ifdef NVTREE_OLD_FIND_BY_LINE
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, size_t* out_lines_to_skip)
 {
     struct nv_tree_node *node, *left, *right;
@@ -416,16 +416,14 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, size_t* out_lines
         left_lf = left ? left->data.lfcount : 0;
         right_lf = right ? right->data.lfcount : 0;
         local_lf = node->data.lfcount - left_lf - right_lf;
-        lines_to_skip++;
 
         if (line < left_lf) {
             current = node->left;
         }
         else if (line < left_lf + local_lf) {
             // line falls within this node’s text
-            lines_to_skip--;
             if (out_lines_to_skip) {
-                *out_lines_to_skip = lines_to_skip;
+                *out_lines_to_skip = line - left_lf;
             }
             return current;
         }
@@ -435,9 +433,6 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, size_t* out_lines
         }
     }
 
-    if (out_lines_to_skip) {
-        *out_lines_to_skip = lines_to_skip;
-    }
     return NV_NULL_INDEX;
 }
 #else
@@ -472,8 +467,12 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, nv_pool_index sta
         }
         else if (line < left_lf + local_lf) {
             // line falls within this node’s text
-            *lf_index = line - left_lf;
-            *stack_top = top;
+            if (lf_index) {
+                *lf_index = line - left_lf;
+            }
+            if (stack_top) {
+                *stack_top = top;
+            }
             return current;
         }
         else {
@@ -482,60 +481,49 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, nv_pool_index sta
         }
     }
 
-    *stack_top = top;
+    if (stack_top) {
+        *stack_top = top;
+    }
     return NV_NULL_INDEX;
 }
 
 nv_pool_index nv_successor_with_stack(nv_pool_index current, nv_pool_index stack[], int* stack_top)
 {
-    struct nv_tree_node *node = NODE_FROM_POOL(current), *tmp = NULL;
-
-    if (node->right != NV_NULL_INDEX) {
-        nv_pool_index current = node->right;
-
-        while (current != NV_NULL_INDEX) {
-            tmp = NODE_FROM_POOL(current);
-
-            if (!tmp) {
-                break;
-            }
-
-            if (*stack_top < NVTREE_MAX_STACK_DEPTH) {
-                stack[(*stack_top)++] = current;
-            }
-
-            current = tmp->left;
-        }
-
-        if (*stack_top > 0) {
-            return stack[(*stack_top) - 1];
-        }
-
+    struct nv_tree_node* node = NODE_FROM_POOL(current);
+    if (!node) {
         return NV_NULL_INDEX;
     }
 
-    // climb the stack until we find a parent where current is in left subtree
-    while (*stack_top > 0) {
-        nv_pool_index topidx = stack[--(*stack_top)];
+    if (node->right != NV_NULL_INDEX) {
+        nv_pool_index next = node->right;
 
-        if (topidx == current) {
-            if (*stack_top == 0) {
-                return NV_NULL_INDEX;
+        while (next != NV_NULL_INDEX) {
+            if (*stack_top < NVTREE_MAX_STACK_DEPTH) {
+                stack[(*stack_top)++] = next;
             }
 
-            nv_pool_index parent = stack[(*stack_top) - 1];
-            tmp = NODE_FROM_POOL(parent);
-
+            struct nv_tree_node* tmp = NODE_FROM_POOL(next);
             if (!tmp) {
                 break;
             }
 
-            if (tmp->left == current) {
-                return parent;
-            }
+            next = tmp->left;
+        }
 
-            current = parent;
-            continue;
+        return stack[*stack_top - 1];
+    }
+
+    while (*stack_top > 1) {
+        nv_pool_index child = stack[--(*stack_top)];
+        nv_pool_index parent = stack[*stack_top - 1];
+
+        struct nv_tree_node* p = NODE_FROM_POOL(parent);
+        if (!p) {
+            break;
+        }
+
+        if (p->left == child) {
+            return parent;
         }
     }
 
