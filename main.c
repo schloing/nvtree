@@ -436,7 +436,7 @@ nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, size_t* out_lines
     return NV_NULL_INDEX;
 }
 #else
-// lf_index set to which line within node contains target line
+// NOTE: line is 0-based, where line 0 represents the first line found.
 nv_pool_index nv_find_by_line(nv_pool_index tree, size_t line, nv_pool_index stack[], int* stack_top, size_t* lf_index)
 {
     struct nv_tree_node *node, *left, *right;
