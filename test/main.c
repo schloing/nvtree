@@ -1,213 +1,176 @@
-#include <assert.h>
+#include <stdlib.h>
 #include <stdio.h>
-#include <string.h>
-
+#include <time.h>
 #include "../nvtree.h"
+#include "../rb.h"
 
-#define ADD_BUFFER_SIZE 256
-static cvector(char) add_buffer;
-
-// forwards
-static void assign_insert(nv_pool_index* tree, const char* string, size_t pos);
-static void assign_insert_print(nv_pool_index* tree, const char* string, size_t pos);
-static void print(nv_pool_index tree);
-static void print_current_only(nv_pool_index tree);
-static int test_try_right_insertions();
-static int test_try_left_insertions();
-static int test_try_contiguous_insertions();
-static int test_middle_insertions();
-// end forwards
-
-static void assign_insert(nv_pool_index* tree, const char* string, size_t pos)
+static void nv_tree_dump_dot_rec(FILE* f, nv_tree* tree)
 {
-    size_t push_index = cvector_size(add_buffer), i = 0;
-
-    for (i = 0; string[i] != '\0'; i++) {
-        cvector_push_back(add_buffer, string[i]);
-    }
-
-    struct nv_node data = { .buff_id = NV_BUFF_ID_ADD, .buff_index = push_index, .length = i, .length_left = 0 };
-
-    *tree = nv_tree_insert(*tree, pos, data);
-    *tree = nv_tree_paint(*tree, B);
-}
-
-static void assign_insert_print(nv_pool_index* tree, const char* string, size_t pos)
-{
-    assign_insert(tree, string, pos);
-    printf("\n");
-    print(*tree);
-}
-
-static void print(nv_pool_index tree)
-{
-    struct nv_tree_node* node = NODE_FROM_POOL(tree);
-
-    if (!node) {
+    if (!tree) {
         return;
     }
 
-    print(node->left);
+    fprintf(f,
+        "n%p [label=\"%zu (%zu,%zu)\", style=filled, fillcolor=%s, fontcolor=white];\n",
+        (void*)tree,
+        tree->data.size, tree->data.size_left, tree->data.size_right,
+        tree->colour == NV_TREE_COLOUR_RED ? "red" : "black");
 
-    size_t bufsize = cvector_size(add_buffer);
-
-    if (node->data.buff_index < bufsize &&
-        node->data.buff_index + node->data.length <= bufsize) {
-        printf("%.*s\n", (int)node->data.length, &add_buffer[node->data.buff_index]);
+    if (tree->left) {
+        fprintf(f, "n%p -> n%p;\n", (void*)tree, (void*)tree->left);
+        nv_tree_dump_dot_rec(f, tree->left);
     }
 
-    print(node->right);
-}
-
-static void print_current_only(nv_pool_index tree)
-{
-    struct nv_tree_node* node = NODE_FROM_POOL(tree);
-
-    if (!node) {
-        return;
-    }
-
-    size_t bufsize = cvector_size(add_buffer);
-
-    if (node->data.buff_index < bufsize &&
-        node->data.buff_index + node->data.length <= bufsize) {
-        printf("%.*s\n", (int)node->data.length, &add_buffer[node->data.buff_index]);
+    if (tree->right) {
+        fprintf(f, "n%p -> n%p;\n", (void*)tree, (void*)tree->right);
+        nv_tree_dump_dot_rec(f, tree->right);
     }
 }
 
-static int test_try_right_insertions()
+static void nv_tree_dump_dot(nv_tree* tree, const char* path)
 {
-    printf("attempting right insertions\n------------------------------\n");
+    FILE* f = fopen(path, "w");
 
-    nv_pool_index tree = nv_tree_init();
+    fprintf(f, "digraph G {\n");
+    fprintf(f, "node [shape=circle];\n");
+    nv_tree_dump_dot_rec(f, tree);
+    fprintf(f, "}\n");
 
-    size_t pos = 0;
-    assign_insert_print(&tree, "monday", pos); pos += strlen("monday");
-    assign_insert_print(&tree, "tuesday", pos); pos += strlen("tuesday");
-    assign_insert_print(&tree, "wednesday", pos);
-
-    nv_tree_free_all(tree);
-
-    return 1;
+    fclose(f);
 }
 
-static int test_try_left_insertions()
+static nv_tree_data* nv_tree_gimme_data()
 {
-    printf("attempting left insertions\n------------------------------\n");
-
-    nv_pool_index tree = nv_tree_init();
-
-    assign_insert_print(&tree, "wednesday", 0);
-    assign_insert_print(&tree, "tuesday", 0);
-    assign_insert_print(&tree, "monday", 0);
-
-    nv_tree_free_all(tree);
-
-    return 1;
+    static int id = 0;
+    nv_tree_data* dat = (nv_tree_data*)malloc(sizeof(nv_tree_data));
+    dat->size = 1;
+    id++;
+    return dat;
 }
 
-static int test_try_contiguous_insertions()
+static size_t nv_tree_validate_sizes(nv_tree* t)
 {
-    printf("attempting contiguous insertions\n------------------------------\n");
-
-    nv_pool_index tree = nv_tree_init();
-    size_t pos = 0;
-
-    assign_insert_print(&tree, "monday", pos);      pos += strlen("monday");
-    assign_insert_print(&tree, "tuesday", pos);     pos += strlen("tuesday");
-    assign_insert_print(&tree, "wednesday", pos);   pos += strlen("wednesday");
-    assign_insert_print(&tree, "thursday", pos);    pos += strlen("thursday");
-    assign_insert_print(&tree, "friday", pos);      pos += strlen("friday");
-    assign_insert_print(&tree, "saturday", pos);
-
-    nv_tree_free_all(tree);
-
-    return 1;
-}
-
-static int test_middle_insertions()
-{
-    printf("attempting middle insertions\n------------------------------\n");
-
-    nv_pool_index tree = nv_tree_init();
-
-    assign_insert_print(&tree, "mnday", 0);
-    assign_insert_print(&tree, "o", 1);
-
-    nv_tree_free_all(tree);
-
-    return 1;
-}
-
-static int test_find_by_pos()
-{
-    printf("attempting find by pos\n------------------------------\n");
-
-    nv_pool_index tree = nv_tree_init(), line = NV_NULL_INDEX;
-    size_t pos = 0;
-
-    assign_insert_print(&tree, "monday\n", pos);      pos += strlen("monday\n");
-    assign_insert_print(&tree, "tuesday\n", pos);     pos += strlen("tuesday\n");
-    assign_insert_print(&tree, "wednesday\n", pos);   pos += strlen("wednesday\n");
-    assign_insert_print(&tree, "thursday\n", pos);    pos += strlen("thursday\n");
-    assign_insert_print(&tree, "friday\n", pos);      pos += strlen("friday\n");
-    assign_insert_print(&tree, "saturday\n", pos);
-
-    for (int i = 0; i < pos; i++) {
-        line = nv_find_by_pos(tree, i);
-        printf("pos %d falls in node: ", i);
-        print_current_only(line);
+    if (!t) {
+        return 0;
     }
 
-    nv_tree_free_all(tree);
+    size_t L = nv_tree_validate_sizes(t->left);
+    size_t R = nv_tree_validate_sizes(t->right);
+    size_t computed = L + t->data.size + R;
+    size_t reported = nv_tree_size(t);
 
-    return 1;
-}
-
-static int test_find_by_line()
-{
-    printf("attempting find by line\n------------------------------\n");
-
-    nv_pool_index tree = nv_tree_init(), line = NV_NULL_INDEX;
-    size_t pos = 0;
-
-    assign_insert_print(&tree, "monday\n", pos);      pos += strlen("monday\n");
-    assign_insert_print(&tree, "tuesday\n", pos);     pos += strlen("tuesday\n");
-    assign_insert_print(&tree, "wednesday\n", pos);   pos += strlen("wednesday\n");
-    assign_insert_print(&tree, "thursday\n", pos);    pos += strlen("thursday\n");
-    assign_insert_print(&tree, "friday\n", pos);      pos += strlen("friday\n");
-    assign_insert_print(&tree, "saturday\n", pos);
-
-    for (int i = 0; i < 5; i++) {
-        line = nv_find_by_line(tree, i, NULL);
-        printf("line %d: ", i);
-        print_current_only(line);
+    if (reported != computed) {
+        fprintf(stderr, "size mismatch at %p: reported=%zu calc=%zu (L=%zu size=%zu R=%zu)\n",
+                (void*)t, reported, computed, L, t->data.size, R);
+        exit(0);
     }
 
-    nv_tree_free_all(tree);
-
-    return 1;
+    return computed;
 }
 
-// TODO: automate verification of trees, printing and manually checking isn't a good test
+static int nv_tree_validate_rb(nv_tree* t)
+{
+    if (!t) {
+        return 1;
+    }
+
+    if (t->colour == NV_TREE_COLOUR_RED) {
+        if (t->left && t->left->colour == NV_TREE_COLOUR_RED) {
+            fprintf(stderr, "red-red violation at %p and left %p\n", (void*)t, (void*)t->left);
+            exit(0);
+        }
+        if (t->right && t->right->colour == NV_TREE_COLOUR_RED) {
+            fprintf(stderr, "red-red violation at %p and right %p\n", (void*)t, (void*)t->right);
+            exit(0);
+        }
+    }
+
+    int lh = nv_tree_validate_rb(t->left);
+    int rh = nv_tree_validate_rb(t->right);
+
+    if (lh != rh) {
+        fprintf(stderr, "black-height mismatch at %p: lh=%d rh=%d\n", (void*)t, lh, rh);
+        exit(0);
+    }
+
+    return lh + (t->colour == NV_TREE_COLOUR_BLACK ? 1 : 0);
+}
+
+static void nv_tree_validate(nv_tree* root)
+{
+    nv_tree_validate_sizes(root);
+    int bh = nv_tree_validate_rb(root);
+
+    if (root && root->colour != NV_TREE_COLOUR_BLACK) {
+        fprintf(stderr, "root not black\n");
+        exit(0);
+    }
+
+    fprintf(stderr, "validation OK; black-height=%d\n", bh);
+}
+
+static nv_tree* tree = NULL;
+static size_t success_counter = 0;
+
+#define NV_OUTPUT_DOT_ROOT_PATH "./trees/"
+
+static void nv_generate_dot()
+{
+    printf("%zu successes\n", success_counter);
+    char filename[128];
+    snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%02zu.dot", success_counter);
+    nv_tree_dump_dot(tree, filename);
+}
+
+ssize_t nv_clamp_min(ssize_t a, ssize_t min)
+{
+    if (a < min) {
+        return min;
+    }
+    return a;
+}
+
 int main()
 {
-    cvector_reserve(add_buffer, ADD_BUFFER_SIZE);
-    nv_buffers[NV_BUFF_ID_ADD] = add_buffer;
+    srand(time(NULL));
+    ssize_t position = 0;
+    atexit(nv_generate_dot);
 
-    assert(test_try_right_insertions());
-    printf("\n");
-    assert(test_try_left_insertions());
-    printf("\n");
-    assert(test_try_contiguous_insertions());
-    printf("\n");
-    assert(test_middle_insertions());
-    printf("\n");
-    assert(test_find_by_pos());
-    printf("\n");
-    assert(test_find_by_line());
+#define NV_TEST_CONSECUTIVE_INSERTS      0
+#define NV_TEST_CONSECUTIVE_SPLITS       1
 
-    cvector_free(add_buffer);
+#define NV_TEST NV_TEST_CONSECUTIVE_INSERTS
+
+#if NV_TEST == NV_TEST_CONSECUTIVE_INSERTS
+    for (int i = 0; i < 100; i++) {
+        ssize_t length = i;
+        tree = nv_tree_insert((nv_tree_data) { .size = length }, tree, position);
+        nv_tree_validate(tree);
+        char filename[128];
+        snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%d.dot", i);
+        nv_tree_dump_dot(tree, filename); // bash script turns *.dot -> *.svg
+        position += 1 + i;
+        success_counter++;
+    }
+#elif NV_TEST == NV_TEST_CONSECUTIVE_SPLITS
+    tree = nv_tree_insert((nv_tree_data){ .size = 20 }, tree, 0);
+    nv_tree_validate(tree);
+    nv_tree_dump_dot(tree, NV_OUTPUT_DOT_ROOT_PATH "tree0.dot");
+    success_counter++;
+
+    for (size_t i = 0; i < 20; ++i) {
+        tree = nv_tree_insert((nv_tree_data){ .size = 1 }, tree, i);
+        nv_tree_validate(tree);
+
+        char filename[128];
+        snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%02zu.dot", i + 1);
+        nv_tree_dump_dot(tree, filename);
+
+        success_counter++;
+    }
+
+    nv_generate_dot();
+#endif
 
     return 0;
 }
