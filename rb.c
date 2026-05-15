@@ -37,12 +37,6 @@ bool nv_rb_tree_is_member(const nv_tree_data* data, nv_tree* tree)
     return false;
 }
 
-size_t nv_tree_size(nv_tree* tree)
-{
-    return tree ?
-        tree->data.size_left + tree->data.size + tree->data.size_right : 0;
-}
-
 // does not allocate new node if tree is NULL
 nv_tree* nv_rb_tree_make_black(nv_tree* tree)
 {
@@ -148,34 +142,6 @@ nv_tree* nv_rb_tree_balance(nv_tree* tree)
     }
 
     return nv_rb_tree_recompute(tree);
-}
-
-bool nv_rb_tree_data_eq(const nv_tree_data* a, const nv_tree_data* b)
-{
-    return false;
-}
-
-bool nv_rb_tree_data_lt(const nv_tree_data* a, const nv_tree_data* b)
-{
-    return false;
-}
-
-bool nv_rb_tree_data_gt(const nv_tree_data* a, const nv_tree_data* b)
-{
-    return false;
-}
-
-nv_tree* nv_rb_tree_recompute(nv_tree* tree)
-{
-    if (!tree) {
-        return NULL;
-    }
-
-    nv_tree_data data = tree->data;
-    data.size_left = nv_tree_size(tree->left);
-    data.size_right = nv_tree_size(tree->right);
-
-    return nv_rb_tree_change_safe(tree, tree->colour, data, tree->left, tree->right);
 }
 
 // does not mutate the tree

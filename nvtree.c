@@ -7,6 +7,40 @@ static nv_tree* nv_tree_join_right(nv_tree_data data, nv_tree* left, nv_tree* ri
 static nv_tree* nv_tree_join_left(nv_tree_data data, nv_tree* left, nv_tree* right);
 static nv_tree* nv_tree_insert_int(nv_tree_data data, nv_tree* tree, size_t offset);
 
+bool nv_rb_tree_data_eq(const nv_tree_data* a, const nv_tree_data* b)
+{
+    return false;
+}
+
+bool nv_rb_tree_data_lt(const nv_tree_data* a, const nv_tree_data* b)
+{
+    return false;
+}
+
+bool nv_rb_tree_data_gt(const nv_tree_data* a, const nv_tree_data* b)
+{
+    return false;
+}
+
+size_t nv_tree_size(nv_tree* tree)
+{
+    return tree ?
+        tree->data.size_left + tree->data.size + tree->data.size_right : 0;
+}
+
+nv_tree* nv_rb_tree_recompute(nv_tree* tree)
+{
+    if (!tree) {
+        return NULL;
+    }
+
+    nv_tree_data data = tree->data;
+    data.size_left = nv_tree_size(tree->left);
+    data.size_right = nv_tree_size(tree->right);
+
+    return nv_rb_tree_change_safe(tree, tree->colour, data, tree->left, tree->right);
+}
+
 static nv_tree* nv_tree_join_right(nv_tree_data data, nv_tree* left, nv_tree* right)
 {
     if (!left || !right) {
