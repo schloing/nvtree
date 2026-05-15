@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>tree viewer</title>
+    <script defer src="./alpine/alpine.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, Segoe UI, Roboto, Helvetica, Arial;
+            margin: 12px
+        }
+
+        .inline {
+            display: flex;
+            gap: 1em;
+        }
+
+        #viewer img {
+            height: 512px;
+            max-width: 100%;
+            overflow-x: scroll;
+            display: block;
+            margin-bottom: 8px
+        }
+
+        #gallery img {
+            height: 128px;
+            margin: 4px;
+            cursor: pointer;
+            border: 2px solid transparent
+        }
+
+        #gallery img.selected {
+            border-color: #f88
+        }
+    </style>
+</head>
+
+<body x-data="treeViewer()">
+    <div>
+        <div id="viewer">
+            <img :src="src(current)" alt="tree" />
+            <div class="inline">
+                <button @click="prev()" :disabled="current===0">Prev</button>
+                <button @click="next()" :disabled="current>=count-1">Next</button>
+                <span x-text="` ${current+1} / ${count} `"></span>
+            </div>
+        </div>
+
+        <div class="inline">
+            <input type="range" min="1" max="100" x-model.number="maxThumbs">
+            <span x-text="`show ${maxThumbs} thumbnails`"></span>
+        </div>
+
+        <hr />
+
+        <div id="gallery" style="display:flex;flex-wrap:wrap">
+            <template x-for="i in Math.min(count, maxThumbs)" :key="i">
+                <img :src="src(i-1)" :class="{selected: current === i-1}" @click="go(i-1)" />
+            </template>
+        </div>
+    </div>
+
+    <script>
+        function treeViewer() {
+            return {
+                root: '../trees/',
+                prefix: 'tree',
+                count: 100,
+                maxThumbs: 40,
+                current: 0,
+                src(i) {
+                    return `${this.root}${this.prefix}${i}.svg`;
+                },
+                prev() {
+                    if (this.current > 0) {
+                        this.current--;
+                    }
+                },
+                next() {
+                    if (this.current < this.count - 1) {
+                        this.current++;
+                    }
+                },
+                go(i) {
+                    this.current = i;
+                },
+                init() {
+                    window.addEventListener('keydown', (e) => {
+                        if (e.key === 'ArrowLeft') {
+                            this.prev();
+                        }
+                        if (e.key === 'ArrowRight') {
+                            this.next();
+                        }
+                    });
+                }
+            };
+        }
+    </script>
+</body>
+
+</html>
