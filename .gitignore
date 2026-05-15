@@ -5,3 +5,4 @@ build/
 *.a
 *.dSYM
 test/trees/*
+.DS_Store
