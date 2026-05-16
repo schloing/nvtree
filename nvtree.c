@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include "rb.h"
+#include "nvtree.h"
 
 static nv_tree* nv_tree_join_right(nv_tree_data data, nv_tree* left, nv_tree* right);
 static nv_tree* nv_tree_join_left(nv_tree_data data, nv_tree* left, nv_tree* right);
