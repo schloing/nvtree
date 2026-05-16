@@ -5,7 +5,6 @@
 
 struct nv_tree_data_s {
     size_t size_left;
-    size_t size_right;
     size_t size;
     size_t line_count;
 };

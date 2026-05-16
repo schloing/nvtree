@@ -25,7 +25,7 @@ bool nv_rb_tree_data_gt(const nv_tree_data* a, const nv_tree_data* b)
 size_t nv_tree_size(nv_tree* tree)
 {
     return tree ?
-        tree->data.size_left + tree->data.size + tree->data.size_right : 0;
+        tree->data.size_left + tree->data.size : 0;
 }
 
 nv_tree* nv_rb_tree_recompute(nv_tree* tree)
@@ -36,7 +36,6 @@ nv_tree* nv_rb_tree_recompute(nv_tree* tree)
 
     nv_tree_data data = tree->data;
     data.size_left = nv_tree_size(tree->left);
-    data.size_right = nv_tree_size(tree->right);
 
     return nv_rb_tree_change_safe(tree, tree->colour, data, tree->left, tree->right);
 }
@@ -204,7 +203,6 @@ static nv_tree* nv_tree_insert_int(nv_tree_data data, nv_tree* tree, size_t offs
         // continue into right subtree
         nv_tree* right = nv_tree_insert_int(data, tree->right, offset - (tree->data.size_left + tree->data.size));
         nv_tree_data newdata = tree->data;
-        newdata.size_right = nv_tree_size(right);
         tree = nv_rb_tree_change(tree, tree->colour, newdata, tree->left, right);
     }
 
