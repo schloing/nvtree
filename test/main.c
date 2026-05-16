@@ -117,7 +117,7 @@ static void nv_generate_dot()
 {
     printf("%zu successes\n", success_counter);
     char filename[128];
-    snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%02zu.dot", success_counter);
+    snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%zu.dot", success_counter);
     nv_tree_dump_dot(tree, filename);
 }
 
@@ -162,7 +162,7 @@ int main()
         nv_tree_validate(tree);
 
         char filename[128];
-        snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%02zu.dot", i + 1);
+        snprintf(filename, sizeof(filename), NV_OUTPUT_DOT_ROOT_PATH "tree%zu.dot", i + 1);
         nv_tree_dump_dot(tree, filename);
 
         success_counter++;
