@@ -153,17 +153,26 @@ void nv_tree_split(nv_tree* tree, size_t offset, nv_tree** left, nv_tree** right
         return;
     }
 
-    if (offset < tree->data.size_left + tree->data.size) {
-        *left = tree->left;
-        *right = tree->right;
-        return;
-    }
-
     nv_tree *l, *r;
     if (offset < tree->data.size_left) {
         nv_tree_split(tree->left, offset, &l, &r);
         *left = l;
         *right = nv_tree_join(tree->data, r, tree->right);
+        return;
+    }
+
+    if (offset < tree->data.size_left + tree->data.size) {
+        if (tree->left && tree->right) {
+            *left = tree->left;
+            *right = tree->right;
+        }
+        else {
+            // construct both sides ourselves
+            l = nv_rb_tree_init(NV_TREE_COLOUR_BLACK, (nv_tree_data) { .size = offset + 1 }, NULL, NULL);
+            r = nv_rb_tree_init(NV_TREE_COLOUR_BLACK, (nv_tree_data) { .size = tree->data.size - offset - 1 }, NULL, NULL);
+            *left = l;
+            *right = r;
+        }
         return;
     }
 
