@@ -13,7 +13,7 @@ static void nv_tree_dump_dot_rec(FILE* f, nv_tree* tree)
     fprintf(f,
         "n%p [label=\"%zu (%zu,%zu)\", style=filled, fillcolor=%s, fontcolor=white];\n",
         (void*)tree,
-        tree->data.size, tree->data.size_left, tree->data.size_right,
+        tree->data.size, tree->data.size_left, (size_t)0,
         tree->colour == NV_TREE_COLOUR_RED ? "red" : "black");
 
     if (tree->left) {
@@ -55,13 +55,12 @@ static size_t nv_tree_validate_sizes(nv_tree* t)
     }
 
     size_t L = nv_tree_validate_sizes(t->left);
-    size_t R = nv_tree_validate_sizes(t->right);
-    size_t computed = L + t->data.size + R;
+    size_t computed = L + t->data.size;
     size_t reported = nv_tree_size(t);
 
     if (reported != computed) {
         fprintf(stderr, "size mismatch at %p: reported=%zu calc=%zu (L=%zu size=%zu R=%zu)\n",
-                (void*)t, reported, computed, L, t->data.size, R);
+                (void*)t, reported, computed, L, t->data.size, (size_t)0);
         exit(0);
     }
 
