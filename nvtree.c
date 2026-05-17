@@ -215,3 +215,77 @@ nv_tree* nv_tree_insert(nv_tree_data data, nv_tree* tree, size_t position)
     nv_tree* new = nv_tree_insert_int(data, tree, position);
     return nv_rb_tree_make_black(new);
 }
+
+// TODO: optionally return stack in nv_tree_find_* so that
+// it can be cached by caller
+nv_tree* nv_tree_find_by_offset(nv_tree* tree, size_t offset)
+{
+    if (!tree) {
+        return NULL;
+    }
+
+    nv_tree* stack[NV_TREE_MAX_STACK_DEPTH];
+    size_t top = 0;
+    stack[top++] = tree;
+
+    while (top > 0) {
+        nv_tree* curr = stack[--top];
+        if (!curr) {
+            continue;
+        }
+
+        if (curr->data.size_left > offset) {
+            if (top < NV_TREE_MAX_STACK_DEPTH) {
+                stack[top++] = curr->left;
+            }
+        }
+        else if (curr->data.size_left + curr->data.size >= offset) {
+            // requested offset is within current node
+            // caller needs to extract it themselves
+            return curr;
+        }
+        else {
+            if (top < NV_TREE_MAX_STACK_DEPTH) {
+                stack[top++] = curr->right;
+            }
+        }
+    }
+    return NULL;
+}
+
+nv_tree* nv_tree_find_by_line(nv_tree* tree, size_t line)
+{
+    if (!tree) {
+        return NULL;
+    }
+
+    nv_tree* stack[NV_TREE_MAX_STACK_DEPTH];
+    size_t top = 0, cum = 0;
+    stack[top++] = tree;
+
+    while (top > 0) {
+        nv_tree* curr = stack[--top];
+        if (!curr) {
+            continue;
+        }
+
+        if (curr->data.line_count + cum > line) {
+            if (top < NV_TREE_MAX_STACK_DEPTH) {
+                line -= curr->data.line_count;
+                stack[top++] = curr->left;
+            }
+        }
+        else if (curr->data.line_count + curr->data.line_count + cum >= line) {
+            // requested line is within current node
+            // caller needs to extract it themselves
+            return curr;
+        }
+        else {
+            if (top < NV_TREE_MAX_STACK_DEPTH) {
+                cum += curr->data.line_count;
+                stack[top++] = curr->right;
+            }
+        }
+    }
+    return NULL;
+}
