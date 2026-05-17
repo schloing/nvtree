@@ -137,6 +137,7 @@ int main()
 
 #define NV_TEST_CONSECUTIVE_INSERTS      0
 #define NV_TEST_CONSECUTIVE_SPLITS       1
+#define NV_TEST_FIND_BY_OFFSET           2
 
 #define NV_TEST NV_TEST_CONSECUTIVE_INSERTS
 
@@ -169,6 +170,13 @@ int main()
     }
 
     nv_generate_dot();
+#elif NV_TEST == NV_TEST_FIND_BY_OFFSET
+    tree = nv_tree_insert((nv_tree_data) { .size = 5, .line_count = 1 }, tree, 0); // 0..5
+    tree = nv_tree_insert((nv_tree_data) { .size = 5, .line_count = 2 }, tree, 5); // 5..10
+    tree = nv_tree_insert((nv_tree_data) { .size = 5, .line_count = 3 }, tree, 10); // 10..15
+    nv_tree* new = nv_tree_find_by_offset(tree, 10);
+    printf("passed: %d\n", new == tree);
+    new = nv_tree_find_by_line(tree, 3);
 #endif
 
     return 0;
