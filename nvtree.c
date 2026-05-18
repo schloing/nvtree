@@ -8,6 +8,11 @@ static nv_tree* nv_tree_join_right(nv_tree_data data, nv_tree* left, nv_tree* ri
 static nv_tree* nv_tree_join_left(nv_tree_data data, nv_tree* left, nv_tree* right);
 static nv_tree* nv_tree_insert_int(nv_tree_data data, nv_tree* tree, size_t offset);
 
+nv_tree* nv_tree_init()
+{
+    return nv_rb_tree_init(NV_TREE_COLOUR_BLACK, (nv_tree_data) { 0 }, NULL, NULL);
+}
+
 bool nv_rb_tree_data_eq(const nv_tree_data* a, const nv_tree_data* b)
 {
     return false;
